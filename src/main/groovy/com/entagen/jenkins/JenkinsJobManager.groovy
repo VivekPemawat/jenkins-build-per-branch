@@ -1,7 +1,4 @@
 package com.entagen.jenkins
-
-import groovyx.net.http.ContentType
-
 //import org.jvnet.hudson.test.HudsonTestCase;
 
 class JenkinsJobManager {
@@ -32,6 +29,23 @@ class JenkinsJobManager {
     String org;
     String rootFolder = "Git-Structure";
 
+    void createFile() {
+
+        try {
+
+            BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(
+                    "/tmp/reposList"));
+
+            bufferedWriter.write("pruthvi.gr@inmobi.com;;;;https://github.corp.inmobi.com/mpower/mpower-cannedreportservice;\n");
+            bufferedWriter.write("pruthvi.gr@inmobi.com;Bizapps;Cosmos;;https://github.corp.inmobi.com/bizapps/cosmos-rtbdops;\n");
+            bufferedWriter.close();
+
+        } catch (Exception e) {
+            System.out.println(e);
+
+        }
+    }
+
     void getJenkinsPassword() {
 
         try {
@@ -58,11 +72,74 @@ class JenkinsJobManager {
         org = getOrg();
         repo = getRepo();
         println "org+repo" + org + repo;
+
         // createJobsForallRepo();
-        createJobsForallBranches();
+        //    createFile();
+        callForallTheRepos("/tmp/reposList");
+        reload();
+        sleep(10000);
+
+        // createJobsForallBranches();
 
     }
 
+
+    public void callForallTheRepos(String filePath) {
+
+        try {
+
+            BufferedReader bufferedReader = new BufferedReader(new FileReader(
+                    filePath));
+            String line = "";
+            List<String> jobList = jenkinsApi.getJobNames("");
+
+            while ((line = bufferedReader.readLine()) != null) {
+                System.out.println(line + " line");
+                // call the
+                String[] param = line.split(";");
+                gitUrl = param[4];
+                //format giturl
+                if (gitUrl.contains("git@")) {
+
+
+                    gitUrl = gitUrl.replace(':', '/');
+                    gitUrl = gitUrl.replace("git@", "https://");
+                    gitUrl = gitUrl.replace(".git", "");
+                    if (gitUrl.charAt(gitUrl.length() - 1) == '/') {
+                        gitUrl = gitUrl.substring(0, gitUrl.length() - 1);
+                    }
+                }
+
+                if (gitUrl.charAt(gitUrl.length() - 1) == '/') {
+                    gitUrl = gitUrl.substring(0, gitUrl.length() - 1);
+                }
+                gitUrl = gitUrl.replace(".git", "");
+
+                gitApi.gitUrl = gitUrl;
+                emailId = param[0];
+
+                businessVertical = param[1];
+
+                team = param[2];
+                userProfile = param[3];
+                if (businessVertical == null || businessVertical.length() == 0) businessVertical = "null";
+                if (team == null || team.length() == 0) team = "null";
+                if (userProfile == null || userProfile.length() == 0) userProfile = "null";
+                System.out.println("actual data :" + gitUrl + ";" + emailId + ":" + businessVertical + team + userProfile);
+                org = getOrg();
+                repo = getRepo();
+
+                createJobsForallBranches(jobList);
+                sleep(4000);
+
+
+            }
+
+
+        } catch (Exception e) {
+            System.out.println(e);
+        }
+    }
 
     public void createNestedViewOrg(String rootFolder) {
         println "org is" + org;
@@ -85,7 +162,7 @@ class JenkinsJobManager {
         if (!fileRead.contains("<name>" + org + "</name>")) {
             println "creating org =>" + org;
             config(filename, rootFolder, "<views>", toInsert);
-            reload();
+           // reload();
 
 
         }
@@ -118,20 +195,22 @@ class JenkinsJobManager {
         return uniqueJobs;
     }
 
-    public void createJobsForallBranches() {
 
+    public void createJobsForallBranches(List<String> jobList) {
 
-        List<String> jobList = jenkinsApi.getJobNames("");
+        //  List<String> jobList = jenkinsApi.getJobNames("");
+
         System.out.println("userprofile:" + userProfile);
         System.out.println("mavenCmd" + mavenCmd);
         System.out.println("emailid" + emailId + "businessVertical=>" + businessVertical + "team=>" + team);
         HashSet<String> uniqueJobs = createJobSet(jobList);
         // for(int i=0;i<jo)
         createNestedViewOrg(rootFolder);
-        if (!checkRepoPresent()) {
+        /*if (!checkRepoPresent()) {
             println "creating repo";
 
             createRepoView("Git-Structure", getOrg(), getRepo());
+            sleep(2000);
         }
 
         List<String> branchNameList = gitApi.getBranchNames();
@@ -169,13 +248,14 @@ class JenkinsJobManager {
                 println "creating job =>" + jobName;
                 jenkinsApi.post(jenkinsApi.buildJobPath("createItem", rootFolder, getOrg(), getRepo()), config, [name: jobName, mode: 'copy', from: templateJobPrefix], ContentType.XML)
                 jenkinsApi.post('job/' + jobName + "/config.xml", config, [:], ContentType.XML)
+                sleep(2000);
                 // break;
             }
 
 
         }
 
-
+*/
     }
 
     void syncWithRepo() {
@@ -531,6 +611,7 @@ class JenkinsJobManager {
 
 
         String path1 = "view/Git-Structure/view/" + getOrg() + "/view/" + getRepo();
+        System.out.println("checking repo" + path1);
 //   String path = 'view/Git-Structure/view/' + getOrg() + '/view/' + getRepo();
         boolean response = jenkinsApi.getCheck(path: path1)
         return response;
