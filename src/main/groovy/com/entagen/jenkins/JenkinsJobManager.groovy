@@ -230,6 +230,13 @@ class JenkinsJobManager {
             String branchName = branchNameList.get(i);
 
             jobName = getOrg() + "_" + getRepo() + "_" + branchName.replaceAll('/', '_');
+            jobName= jobName.replace('@','_');
+            jobName= jobName.replace('%','_');
+            jobName= jobName.replace('#','_');
+            jobName= jobName.replace('&','_');
+            jobName= jobName.replace('*','_');
+            jobName= jobName.replace('^','_');
+            jobName= jobName.replace('@','_');
 
 
             if (!jobList.contains(jobName) && !uniqueJobs.contains(jobName.toUpperCase())) {
@@ -254,13 +261,7 @@ class JenkinsJobManager {
                // println "creating job =>" + jobName;
 
                 // replacing special characters as jenkins dont accept for jobname
-                jobName= jobName.replace('@','_');
-                jobName= jobName.replace('%','_');
-                jobName= jobName.replace('#','_');
-                jobName= jobName.replace('&','_');
-                jobName= jobName.replace('*','_');
-                jobName= jobName.replace('^','_');
-                jobName= jobName.replace('@','_');
+
                 println "creating job =>" + jobName;
                 jenkinsApi.post(jenkinsApi.buildJobPath("createItem", rootFolder, getOrg(), getRepo()), config, [name: jobName, mode: 'copy', from: templateJobPrefix], ContentType.XML)
                 jenkinsApi.post('job/' + jobName + "/config.xml", config, [:], ContentType.XML)
