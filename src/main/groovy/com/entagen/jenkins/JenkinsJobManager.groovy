@@ -211,7 +211,7 @@ class JenkinsJobManager {
         System.out.println("emailid" + emailId + "businessVertical=>" + businessVertical + "team=>" + team);
         HashSet<String> uniqueJobs = createJobSet(jobList);
         // for(int i=0;i<jo)
-        createNestedViewOrg(rootFolder);
+       // createNestedViewOrg(rootFolder);
         if (!checkRepoPresent()) {
             println "creating repo";
 
