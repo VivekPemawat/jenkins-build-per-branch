@@ -1,15 +1,5 @@
 package com.entagen.jenkins
 import groovyx.net.http.ContentType
-import groovyx.net.http.HTTPBuilder
-import groovyx.net.http.RESTClient
-import static groovyx.net.http.ContentType.*
-import org.apache.http.conn.HttpHostConnectException
-import org.apache.http.client.HttpResponseException
-import org.apache.http.HttpStatus
-import org.apache.http.HttpRequestInterceptor
-import org.apache.http.protocol.HttpContext
-import org.apache.http.HttpRequest
-import java.io.*;
 //import org.jvnet.hudson.test.HudsonTestCase;
 
 class JenkinsJobManager {
@@ -103,6 +93,7 @@ class JenkinsJobManager {
                     filePath));
             String line = "";
             List<String> jobList = jenkinsApi.getJobNames("");
+            ArrayList<String> uniqueRepos= new ArrayList<String>();
 
             while ((line = bufferedReader.readLine()) != null) {
                 System.out.println(line + " line");
@@ -139,9 +130,13 @@ class JenkinsJobManager {
                 System.out.println("actual data :" + gitUrl + ";" + emailId + ":" + businessVertical + team + userProfile);
                 org = getOrg();
                 repo = getRepo();
+                if(!uniqueRepos.contains(gitUrl)) {
 
-                createJobsForallBranches(jobList);
-                sleep(4000);
+                    createJobsForallBranches(jobList);
+                    uniqueRepos.add(gitUrl);
+
+                    sleep(4000);
+                }
 
 
             }
