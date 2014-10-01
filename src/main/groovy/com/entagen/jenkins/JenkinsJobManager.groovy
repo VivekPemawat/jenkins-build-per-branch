@@ -251,6 +251,16 @@ class JenkinsJobManager {
                 config = config.replace("Team_value", team);
                 config = config.replace("Business_Vertical_value", businessVertical);
                 config = config.replace("BranchName", branchName);
+               // println "creating job =>" + jobName;
+
+                // replacing special characters as jenkins dont accept for jobname
+                jobName= jobName.replace('@','_');
+                jobName= jobName.replace('%','_');
+                jobName= jobName.replace('#','_');
+                jobName= jobName.replace('&','_');
+                jobName= jobName.replace('*','_');
+                jobName= jobName.replace('^','_');
+                jobName= jobName.replace('@','_');
                 println "creating job =>" + jobName;
                 jenkinsApi.post(jenkinsApi.buildJobPath("createItem", rootFolder, getOrg(), getRepo()), config, [name: jobName, mode: 'copy', from: templateJobPrefix], ContentType.XML)
                 jenkinsApi.post('job/' + jobName + "/config.xml", config, [:], ContentType.XML)
