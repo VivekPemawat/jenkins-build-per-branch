@@ -130,10 +130,12 @@ class JenkinsJobManager {
                 System.out.println("actual data :" + gitUrl + ";" + emailId + ":" + businessVertical + team + userProfile);
                 org = getOrg();
                 repo = getRepo();
-                if(!uniqueRepos.contains(gitUrl)) {
+               // String copygitURL=gitUrl;
+               // copygitURL=copygitURL.replace("https","http");
+                if(!uniqueRepos.contains(gitUrl.replace("https","http"))) {
 
                     createJobsForallBranches(jobList);
-                    uniqueRepos.add(gitUrl);
+                    uniqueRepos.add(gitUrl.replace("https","http"));
 
                     sleep(4000);
                 }
@@ -266,6 +268,7 @@ class JenkinsJobManager {
                 jenkinsApi.post(jenkinsApi.buildJobPath("createItem", rootFolder, getOrg(), getRepo()), config, [name: jobName, mode: 'copy', from: templateJobPrefix], ContentType.XML)
                 jenkinsApi.post('job/' + jobName + "/config.xml", config, [:], ContentType.XML)
                 sleep(2000);
+                jobList.add(jobName);
                 // break;
             }
 
