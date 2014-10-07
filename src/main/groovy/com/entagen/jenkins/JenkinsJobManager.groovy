@@ -161,7 +161,6 @@ class JenkinsJobManager {
 
             uniqueJobs.add(jobName.toUpperCase());
 
-
             emailId = emailId.replace(',', ' ');
             mavenCmd = mavenCmd.replace(',', ' ');
 
