@@ -164,9 +164,9 @@ class JenkinsJobManager {
 
             uniqueJobs.add(jobName.toUpperCase());
 
-            if (emailId == null && emailId.length() != 0)
+            if (emailId == null || emailId.length() != 0)
                 emailId = "";
-            if (mavenCmd == null && mavenCmd.length() != 0)
+            if (mavenCmd == null || mavenCmd.length() != 0)
                 mavenCmd = "";
             if (userProfile == null) userProfile = "";
             if (team == null) team = "";
