@@ -164,10 +164,13 @@ class JenkinsJobManager {
 
             uniqueJobs.add(jobName.toUpperCase());
 
-            if (emailId != null && emailId.length() != 0)
-                emailId = emailId.replace(',', ' ');
-            if (mavenCmd != null && mavenCmd.length() != 0)
-                mavenCmd = mavenCmd.replace(',', ' ');
+            if (emailId == null && emailId.length() != 0)
+                emailId = "";
+            if (mavenCmd == null && mavenCmd.length() != 0)
+                mavenCmd = "";
+            if (userProfile == null) userProfile = "";
+            if (team == null) team = "";
+            if (businessVertical == null) businessVertical = "";
 
             config = jenkinsApi.getJobConfig(templateJobPrefix);
 
@@ -175,6 +178,7 @@ class JenkinsJobManager {
             config = config.replace("UserProfile_value", userProfile);
             config = config.replace("Maven_CMD_value", mavenCmd);
             config = config.replace("Maven_CMD_value", mavenCmd);
+            // if(emailId!=null)
             config = config.replace("EmailIds_value", emailId);
             config = config.replace("Team_value", team);
             config = config.replace("Business_Vertical_value", businessVertical);
