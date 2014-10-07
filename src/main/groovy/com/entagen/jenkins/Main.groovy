@@ -8,6 +8,7 @@ Bootstrap class that parses command line arguments, or system properties passed 
 class Main {
     public static final Map<String, Map<String, Object>> opts = [
             h  : [longOpt: 'help', required: false, args: 0, argName: 'help', description: "Print usage information - gradle flag -Dhelp=true"],
+            br  : [longOpt: 'branch', required: false, args: 0, argName: 'branch', description: "branch"],
             w  : [longOpt: 'mavenCmd', required: false, args: 0, argName: 'mavenCmd', description: "mavenCmd"],
             l  : [longOpt: 'userProfile', required: false, args: 0, argName: 'userProfile', description: "userProfile"],
             b  : [longOpt: 'emailId', required: false, args: 0, argName: 'emailId', description: "emailId"],
