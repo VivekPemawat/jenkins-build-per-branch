@@ -65,7 +65,7 @@ class JenkinsJobManager {
                 if (new File(path + name).isDirectory()) {
                     // name=name.replaceAll("[.]", "_");
                     // name=name.replace(' ', '_');
-                    userList.add(name);
+                    userList.add(name.replace('.','-'));
                     // System.out.println(name);
                 }
             }
@@ -105,7 +105,7 @@ class JenkinsJobManager {
         getUsersList("/d0/jenkins/users/");
         jobList = jenkinsApi.getJobNames("");
         if (userList.contains(user)) {
-            rootFolder = "Developer";
+            rootFolder = "Developers";
             userBranch = branch;
 
             createUserJob();
