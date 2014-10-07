@@ -65,7 +65,7 @@ class JenkinsJobManager {
                 if (new File(path + name).isDirectory()) {
                     // name=name.replaceAll("[.]", "_");
                     // name=name.replace(' ', '_');
-                    userList.add(name.replace('.','-'));
+                    userList.add(name.replace('.', '-'));
                     // System.out.println(name);
                 }
             }
@@ -164,11 +164,13 @@ class JenkinsJobManager {
 
             uniqueJobs.add(jobName.toUpperCase());
 
-
-            emailId = emailId.replace(',', ' ');
-            mavenCmd = mavenCmd.replace(',', ' ');
+            if (emailId != null && emailId.length() != 0)
+                emailId = emailId.replace(',', ' ');
+            if (mavenCmd != null && mavenCmd.length() != 0)
+                mavenCmd = mavenCmd.replace(',', ' ');
 
             config = jenkinsApi.getJobConfig(templateJobPrefix);
+
             config = config.replace("GIT_URL", gitUrl);
             config = config.replace("UserProfile_value", userProfile);
             config = config.replace("Maven_CMD_value", mavenCmd);
