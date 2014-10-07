@@ -34,6 +34,7 @@ class JenkinsJobManager {
     ArrayList<String> userList = new ArrayList<String>();
     String user;
     String userBranch;
+    String branch;
 
     List<String> jobList = new ArrayList<String>()
 
@@ -102,8 +103,10 @@ class JenkinsJobManager {
         println "org+repo" + org + repo;
         user = org;
         getUsersList("/d0/jenkins/users/");
+        jobList = jenkinsApi.getJobNames("");
         if (userList.contains(user)) {
             rootFolder = "Developer";
+            userBranch = branch;
 
             createUserJob();
 
@@ -120,7 +123,7 @@ class JenkinsJobManager {
         }
     }
 
-    void createUserJob(List<String> jobList) {
+    void createUserJob() {
         //  List<String> jobList = jenkinsApi.getJobNames("");
         rootFolder = "Developers";
 
@@ -161,6 +164,7 @@ class JenkinsJobManager {
 
             uniqueJobs.add(jobName.toUpperCase());
 
+
             emailId = emailId.replace(',', ' ');
             mavenCmd = mavenCmd.replace(',', ' ');
 
@@ -199,7 +203,7 @@ class JenkinsJobManager {
             BufferedReader bufferedReader = new BufferedReader(new FileReader(
                     filePath));
             String line = "";
-            List<String> jobList = jenkinsApi.getJobNames("");
+
             ArrayList<String> uniqueRepos = new ArrayList<String>();
 
             while ((line = bufferedReader.readLine()) != null) {
@@ -339,13 +343,14 @@ class JenkinsJobManager {
     }
 
 
-    public void createJobsForallBranches(List<String> jobList) {
+    public void createJobsForallBranches() {
 
         //  List<String> jobList = jenkinsApi.getJobNames("");
 
         System.out.println("userprofile:" + userProfile);
         System.out.println("mavenCmd" + mavenCmd);
         System.out.println("emailid" + emailId + "businessVertical=>" + businessVertical + "team=>" + team);
+
         HashSet<String> uniqueJobs = createJobSet(jobList);
         // for(int i=0;i<jo)
         // createNestedViewOrg(rootFolder);
