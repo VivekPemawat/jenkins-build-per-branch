@@ -136,7 +136,7 @@ class JenkinsJobManager {
         if (!checkUserRepoPresent()) {
             println "creating repo";
 
-            createUserRepoView("Developers", getRepo());
+            createUserRepoView("Developers", user);
             sleep(2000);
         }
 
