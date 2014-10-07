@@ -1,16 +1,15 @@
 package com.entagen.jenkins
-
 import groovyx.net.http.ContentType
 import groovyx.net.http.HTTPBuilder
 import groovyx.net.http.RESTClient
-import static groovyx.net.http.ContentType.*
-import org.apache.http.conn.HttpHostConnectException
-import org.apache.http.client.HttpResponseException
-import org.apache.http.HttpStatus
-import org.apache.http.HttpRequestInterceptor
-import org.apache.http.protocol.HttpContext
 import org.apache.http.HttpRequest
-import java.io.*;
+import org.apache.http.HttpRequestInterceptor
+import org.apache.http.HttpStatus
+import org.apache.http.client.HttpResponseException
+import org.apache.http.conn.HttpHostConnectException
+import org.apache.http.protocol.HttpContext
+
+import static groovyx.net.http.ContentType.TEXT;
 
 class JenkinsApi {
     String jenkinsServerUrl
@@ -142,9 +141,9 @@ void startJob(String jobName) {
          post(buildViewPath("configSubmit", nestedWithinView, viewName), body)
     }
 
-    void createView(String viewName, String rootFolder, String org) {
+    void createView(String viewName, String rootFolder) {
         Map body = [name: viewName, mode: 'hudson.model.ListView', Submit: 'OK', json: '{"name": "' + viewName + '", "mode": "hudson.model.ListView"}']
-        post(buildViewPath("createView",rootFolder,org), body)
+        post(buildViewPath("createView",rootFolder), body)
        // body = [useincluderegex: 'on', includeRegex: "${branchView.templateJobPrefix}.*${branchView.safeBranchName}", name: viewName, json: '{"name": "' + viewName + '","useincluderegex": {"includeRegex": "' + branchView.templateJobPrefix + '.*' + branchView.safeBranchName + '"},' + VIEW_COLUMNS_JSON + '}']
        // println "configuring view ${viewName}"
       //  post(buildViewPath("configSubmit", nestedWithinView, viewName), body)
