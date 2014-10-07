@@ -13,7 +13,7 @@ dependencies {
     compile 'org.codehaus.groovy.modules.http-builder:http-builder:0.7.1'
 }
 
-task createSourceDirs(description : 'Create empty source directories for all defined sourceSets') << {
+task createSourceDirs(description: 'Create empty source directories for all defined sourceSets') << {
     sourceSets*.allSource.srcDirs.flatten().each { File sourceDirectory ->
         if (!sourceDirectory.exists()) {
             println "Making $sourceDirectory"
@@ -33,7 +33,7 @@ task syncWithRepo(dependsOn: 'classes', type: JavaExec) {
     main = 'com.entagen.jenkins.Main'
     classpath = sourceSets.main.runtimeClasspath
     // pass through specified system properties to the call to main
-    ['help','mavenCmd','userProfile','emailId','businessVertical','team','test','jobPrefix','jenkinsUrl', 'jenkinsUser', 'jenkinsPassword', 'gitUrl', 'templateJobPrefix', 'templateBranchName', 'branchNameRegex', 'nestedView', 'printConfig', 'dryRun', 'startOnCreate', 'noViews', 'noDelete'].each {
+    ['help', 'branch', 'mavenCmd', 'userProfile', 'emailId', 'businessVertical', 'team', 'test', 'jobPrefix', 'jenkinsUrl', 'jenkinsUser', 'jenkinsPassword', 'gitUrl', 'templateJobPrefix', 'templateBranchName', 'branchNameRegex', 'nestedView', 'printConfig', 'dryRun', 'startOnCreate', 'noViews', 'noDelete'].each {
         if (System.getProperty(it)) systemProperty it, System.getProperty(it)
     }
 
