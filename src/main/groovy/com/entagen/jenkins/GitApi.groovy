@@ -26,7 +26,7 @@ class GitApi {
 
         if (!gitUrl.endsWith("/")) gitUrlCopy += "/"
        // this.jenkinsServerUrl = jenkinsServerUrl
-        this.restClient = new RESTClient(gitUrlCopy)
+        this.restClient = new RESTClient("https://github.corp.inmobi.com/")
         println "use basic authentication added for github"
 
         this.requestInterceptor = new HttpRequestInterceptor() {
@@ -56,7 +56,7 @@ class GitApi {
 
             /// response.
         } catch (Exception ex) {
-            println "Unable to connect to host: $jenkinsServerUrl"
+            println "Unable to connect to host: $gitUrl"
             return false;
             // throw ex
         }
