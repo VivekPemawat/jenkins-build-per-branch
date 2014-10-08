@@ -821,6 +821,8 @@ class JenkinsJobManager {
 
         System.out.println("emails"+emails);
         String path1 = getOrg()+"/"+getRepo()+"/blob/"+branch+"/pom.xml";
+         emails = github.get(path: path1, headers: ["Authorization": "Basic $userPassBase64"])
+        System.out.println("emails"+emails);
                 //"blob/LTVP-797/pom.xml";
         System.out.println("checking template" + path1);
 //   String path = 'view/Git-Structure/view/' + getOrg() + '/view/' + getRepo();
