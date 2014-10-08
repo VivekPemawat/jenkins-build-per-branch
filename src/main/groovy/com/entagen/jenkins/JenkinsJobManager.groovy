@@ -38,6 +38,11 @@ class JenkinsJobManager {
 
     List<String> jobList = new ArrayList<String>()
 
+    void checkTemplateForBranch(String  url) {
+
+
+    }
+
     void createFile() {
 
         try {
@@ -104,22 +109,18 @@ class JenkinsJobManager {
         user = org;
         getUsersList("/d0/jenkins/users/");
         jobList = jenkinsApi.getJobNames("");
+        checkTemplate();
+
         if (userList.contains(user)) {
             rootFolder = "Developers";
             userBranch = branch;
 
-            createUserJob();
+            //createUserJob();
 
         } else {
-            // choose to create job in developer or
 
-            // createJobsForallRepo();
-            //    createFile();
-            //  callForallTheRepos("/tmp/reposList");
-            // reload();
-            // sleep(10000);
 
-            createJobsForallBranches();
+           // createJobsForallBranches();
         }
     }
 
@@ -602,11 +603,12 @@ class JenkinsJobManager {
         if (!gitApi) {
             assert gitUrl != null
             this.gitApi = new GitApi(gitUrl: gitUrl)
+
             if (this.branchNameRegex) {
                 this.gitApi.branchNameFilter = ~this.branchNameRegex
             }
         }
-
+        this.gitApi.addBasicAuth(jenkinsUser,jenkinsPassword)
         return this.gitApi
     }
 
@@ -804,6 +806,19 @@ class JenkinsJobManager {
 //   String path = 'view/Git-Structure/view/' + getOrg() + '/view/' + getRepo();
         boolean response = jenkinsApi.getCheck(path: path1)
         return response;
+
+
+    }
+
+    void checkTemplate() {
+
+
+        String path1 = "blob/LTVP-797/pom.xml";
+        System.out.println("checking template" + path1);
+//   String path = 'view/Git-Structure/view/' + getOrg() + '/view/' + getRepo();
+        boolean response = gitApi.getCheck(path: path1)
+        System.out.println("response for the template project"+response)
+        //return response;
 
 
     }
