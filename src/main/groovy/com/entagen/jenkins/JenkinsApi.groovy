@@ -1,353 +1,811 @@
 package com.entagen.jenkins
+
 import groovyx.net.http.ContentType
-import groovyx.net.http.HTTPBuilder
-import groovyx.net.http.RESTClient
-import org.apache.http.HttpRequest
-import org.apache.http.HttpRequestInterceptor
-import org.apache.http.HttpStatus
-import org.apache.http.client.HttpResponseException
-import org.apache.http.conn.HttpHostConnectException
-import org.apache.http.protocol.HttpContext
 
-import static groovyx.net.http.ContentType.TEXT;
+//import org.jvnet.hudson.test.HudsonTestCase;
 
-class JenkinsApi {
-    String jenkinsServerUrl
-    RESTClient restClient
-    HttpRequestInterceptor requestInterceptor
-    boolean findCrumb = true
-    def crumbInfo
+class JenkinsJobManager {
+    String templateJobPrefix
+    String templateBranchName
+    String gitUrl
+    String nestedView
+    String jenkinsUrl
+    String branchNameRegex
+    String jenkinsUser
+    String jenkinsPassword
+    String test;
+    String jobPrefix;
+    String userProfile;
+    String mavenCmd;
+    String emailId;
+    String businessVertical;
+    String team;
 
-    public void setJenkinsServerUrl(String jenkinsServerUrl) {
-        if (!jenkinsServerUrl.endsWith("/")) jenkinsServerUrl += "/"
-        this.jenkinsServerUrl = jenkinsServerUrl
-        this.restClient = new RESTClient(jenkinsServerUrl)
+    Boolean dryRun = false
+    Boolean noViews = false
+    Boolean noDelete = false
+    Boolean startOnCreate = false
+
+    JenkinsApi jenkinsApi
+    GitApi gitApi
+    String repo;
+    String org;
+    String rootFolder = "Git-Structure";
+    ArrayList<String> userList = new ArrayList<String>();
+    String user;
+    String userBranch;
+    String branch;
+
+    List<String> jobList = new ArrayList<String>()
+
+    void createFile() {
+
+        try {
+
+            BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(
+                    "/tmp/reposList"));
+
+            bufferedWriter.write("pruthvi.gr@inmobi.com;;;;https://github.corp.inmobi.com/mpower/mpower-cannedreportservice;\n");
+            bufferedWriter.write("pruthvi.gr@inmobi.com;Bizapps;Cosmos;;https://github.corp.inmobi.com/bizapps/cosmos-rtbdops;\n");
+            bufferedWriter.close();
+
+        } catch (Exception e) {
+            System.out.println(e);
+
+        }
     }
 
-    public void addBasicAuth(String jenkinsServerUser, String jenkinsServerPassword) {
-        println "use basic authentication"
+    ArrayList<String> getUsersList(String path) {
+        try {
 
-        this.requestInterceptor = new HttpRequestInterceptor() {
-            void process(HttpRequest httpRequest, HttpContext httpContext) {
-                def auth = jenkinsServerUser + ':' + jenkinsServerPassword
-                httpRequest.addHeader('Authorization', 'Basic ' + auth.bytes.encodeBase64().toString())
+            File file = new File(path);
+            String[] names = file.list();
+
+            for (String name : names) {
+                if (new File(path + name).isDirectory()) {
+                    // name=name.replaceAll("[.]", "_");
+                    // name=name.replace(' ', '_');
+                    userList.add(name.replace('.', '-'));
+                    // System.out.println(name);
+                }
+            }
+            return userList;
+        }
+        catch (Exception e) {
+        }
+    }
+
+    void getJenkinsPassword() {
+
+        try {
+
+            BufferedReader bufferedReaderpassword = new BufferedReader(new FileReader(
+                    "/d0/jenkins/job_generator_cred"));
+            jenkinsPassword = bufferedReaderpassword.readLine();
+
+
+        } catch (Exception e) {
+            System.out.println(e);
+
+        }
+
+    }
+
+    JenkinsJobManager(Map props) {
+        for (property in props) {
+            this."${property.key}" = property.value
+        }
+        getJenkinsPassword();
+        initJenkinsApi()
+        initGitApi()
+        org = getOrg();
+        repo = getRepo();
+        println "org+repo" + org + repo;
+        user = org;
+        getUsersList("/d0/jenkins/users/");
+        jobList = jenkinsApi.getJobNames("");
+        if (userList.contains(user)) {
+            rootFolder = "Developers";
+            userBranch = branch;
+
+            createUserJob();
+
+        } else {
+            // choose to create job in developer or
+
+            // createJobsForallRepo();
+            //    createFile();
+            //  callForallTheRepos("/tmp/reposList");
+            // reload();
+            // sleep(10000);
+
+            createJobsForallBranches();
+        }
+    }
+
+    void createUserJob() {
+        //  List<String> jobList = jenkinsApi.getJobNames("");
+        rootFolder = "Developers";
+
+        System.out.println("userprofile:" + userProfile);
+        System.out.println("mavenCmd" + mavenCmd);
+        System.out.println("emailid" + emailId + "businessVertical=>" + businessVertical + "team=>" + team);
+        HashSet<String> uniqueJobs = createJobSet(jobList);
+        // for(int i=0;i<jo)
+        // createNestedViewOrg(rootFolder);
+        if (!checkUserRepoPresent()) {
+            println "creating repo";
+
+            createUserRepoView("Developers", user);
+            sleep(2000);
+        }
+
+        //  println jenkinsApi.getJobConfig("sandbox-cyclops-Dev_job-develop");
+        String config = jenkinsApi.getJobConfig(templateJobPrefix);
+
+        String jobName;
+
+
+
+        String branchName = userBranch;
+
+        //jobName = getOrg() + "_" + getRepo() + "_" + branchName.replaceAll('/', '_');
+        jobName = user + "_" + getRepo() + "_" + userBranch.replaceAll('/', '_'); ;
+        jobName = jobName.replace('@', '_');
+        jobName = jobName.replace('%', '_');
+        jobName = jobName.replace('#', '_');
+        jobName = jobName.replace('&', '_');
+        jobName = jobName.replace('*', '_');
+        jobName = jobName.replace('^', '_');
+        jobName = jobName.replace('@', '_');
+
+
+        if (!jobList.contains(jobName) && !uniqueJobs.contains(jobName.toUpperCase())) {
+
+            uniqueJobs.add(jobName.toUpperCase());
+
+            if (emailId == null || emailId.length() != 0)
+                emailId = "";
+            if (mavenCmd == null || mavenCmd.length() != 0)
+                mavenCmd = "";
+            if (userProfile == null) userProfile = "";
+            if (team == null) team = "";
+            if (businessVertical == null) businessVertical = "";
+
+            config = jenkinsApi.getJobConfig(templateJobPrefix);
+
+            config = config.replace("GIT_URL", gitUrl);
+            config = config.replace("UserProfile_value", userProfile);
+            config = config.replace("Maven_CMD_value", mavenCmd);
+            config = config.replace("Maven_CMD_value", mavenCmd);
+            // if(emailId!=null)
+            config = config.replace("EmailIds_value", emailId);
+            config = config.replace("Team_value", team);
+            config = config.replace("Business_Vertical_value", businessVertical);
+            config = config.replace("Team_value", team);
+            config = config.replace("Business_Vertical_value", businessVertical);
+            config = config.replace("BranchName", branchName);
+            // println "creating job =>" + jobName;
+
+            // replacing special characters as jenkins dont accept for jobname
+
+            println "creating job =>" + jobName;
+            jenkinsApi.post(jenkinsApi.buildJobPath("createItem", rootFolder, user), config, [name: jobName, mode: 'copy', from: templateJobPrefix], ContentType.XML)
+            jenkinsApi.post('job/' + jobName + "/config.xml", config, [:], ContentType.XML)
+            sleep(2000);
+            jobList.add(jobName);
+            // break;
+
+
+        }
+
+
+    }
+
+    public void callForallTheRepos(String filePath) {
+
+        try {
+
+            BufferedReader bufferedReader = new BufferedReader(new FileReader(
+                    filePath));
+            String line = "";
+
+            ArrayList<String> uniqueRepos = new ArrayList<String>();
+
+            while ((line = bufferedReader.readLine()) != null) {
+                System.out.println(line + " line");
+                // call the
+                String[] param = line.split(";");
+                gitUrl = param[4];
+                //format giturl
+                if (gitUrl.contains("git@")) {
+
+
+                    gitUrl = gitUrl.replace(':', '/');
+                    gitUrl = gitUrl.replace("git@", "https://");
+                    gitUrl = gitUrl.replace(".git", "");
+                    if (gitUrl.charAt(gitUrl.length() - 1) == '/') {
+                        gitUrl = gitUrl.substring(0, gitUrl.length() - 1);
+                    }
+                }
+
+                if (gitUrl.charAt(gitUrl.length() - 1) == '/') {
+                    gitUrl = gitUrl.substring(0, gitUrl.length() - 1);
+                }
+                gitUrl = gitUrl.replace(".git", "");
+
+                gitApi.gitUrl = gitUrl;
+                emailId = param[0];
+
+                businessVertical = param[1];
+
+                team = param[2];
+                userProfile = param[3];
+                if (businessVertical == null || businessVertical.length() == 0) businessVertical = "null";
+                if (team == null || team.length() == 0) team = "null";
+                if (userProfile == null || userProfile.length() == 0) userProfile = "null";
+                System.out.println("actual data :" + gitUrl + ";" + emailId + ":" + businessVertical + team + userProfile);
+                org = getOrg();
+                repo = getRepo();
+                // String copygitURL=gitUrl;
+                // copygitURL=copygitURL.replace("https","http");
+                if (!uniqueRepos.contains(gitUrl.replace("https", "http"))) {
+
+                    createJobsForallBranches(jobList);
+                    uniqueRepos.add(gitUrl.replace("https", "http"));
+
+                    sleep(4000);
+                }
+
+
+            }
+
+
+        } catch (Exception e) {
+            System.out.println(e);
+        }
+    }
+
+    public void createNestedViewOrg(String rootFolder) {
+        println "org is" + org;
+
+        String filename = "/tmp/config.xml";
+        filename = "/d0/jenkins/config.xml";
+        String fileRead = readFile(filename);
+        String toInsert = "<hudson.plugins.nested__view.NestedView>\n" +
+                "          <owner class=\"hudson.plugins.nested_view.NestedView\" reference=\"../../..\"/>\n" +
+                "          <name>" + org + "</name>\n" +
+                "          <filterExecutors>false</filterExecutors>\n" +
+                "          <filterQueue>false</filterQueue>\n" +
+                "          <properties class=\"hudson.model.View\$PropertyList\"/>\n" +
+                "          <views/>\n" +
+                "          <columns>\n" +
+                "            <columns/>\n" +
+                "          </columns>\n" +
+                "</hudson.plugins.nested__view.NestedView>\n";
+        println "configfile" + fileRead;
+        if (!fileRead.contains("<name>" + org + "</name>")) {
+            println "creating org =>" + org;
+            config(filename, rootFolder, "<views>", toInsert);
+            reload();
+
+
+        }
+
+    }
+
+    public void createRepoView(String rootFolder, String org, String repoName) {
+        // this can be done with existing functions
+        // createOrg(rootFolder,org);
+        // restartJenkins();
+        jenkinsApi.createView(repoName, rootFolder, org);
+        //reload();
+        sleep(10000);
+
+
+    }
+    // need to create listView in org
+
+
+    public void createUserRepoView(String rootFolder, String repoName) {
+        // need to create listView in org
+        // this can be done with existing functions
+        // createOrg(rootFolder,org);
+        // restartJenkins();
+        jenkinsApi.createView(repoName, rootFolder);
+        //reload();
+        sleep(10000);
+
+
+    }
+
+    /* void createJob(String jobName, String jobTemplate) {
+         //  List<String> jobList = jenkinsApi.getJobNames("");
+
+         System.out.println("userprofile:" + userProfile);
+         System.out.println("mavenCmd" + mavenCmd);
+         System.out.println("emailid" + emailId + "businessVertical=>" + businessVertical + "team=>" + team);
+         HashSet<String> uniqueJobs = createJobSet(jobList);
+         // for(int i=0;i<jo)
+         // createNestedViewOrg(rootFolder);
+         if (!checkRepoPresent()) {
+             println "creating repo";
+
+             createRepoView("Git-Structure", getOrg(), getRepo());
+             sleep(2000);
+         }
+
+
+     }
+ */
+
+    HashSet<String> createJobSet(List<String> jobs) {
+        HashSet<String> uniqueJobs = new HashSet<String>();
+        for (int i = 0; i < jobs.size(); i++) {
+            String jobName = jobs.get(i);
+            uniqueJobs.add(jobName.toUpperCase());
+        }
+        return uniqueJobs;
+    }
+
+
+    public void createJobsForallBranches() {
+
+        //  List<String> jobList = jenkinsApi.getJobNames("");
+
+        System.out.println("userprofile:" + userProfile);
+        System.out.println("mavenCmd" + mavenCmd);
+        System.out.println("emailid" + emailId + "businessVertical=>" + businessVertical + "team=>" + team);
+
+        HashSet<String> uniqueJobs = createJobSet(jobList);
+        // for(int i=0;i<jo)
+        // createNestedViewOrg(rootFolder);
+        if (!checkRepoPresent()) {
+            println "creating repo";
+
+            createRepoView("Git-Structure", getOrg(), getRepo());
+            sleep(2000);
+        }
+
+        List<String> branchNameList = gitApi.getBranchNames();
+        //  println jenkinsApi.getJobConfig("sandbox-cyclops-Dev_job-develop");
+        String config = jenkinsApi.getJobConfig(templateJobPrefix);
+
+        String jobName;
+
+
+        for (int i = 0; i < branchNameList.size(); i++) {
+            String branchName = branchNameList.get(i);
+
+            jobName = getOrg() + "_" + getRepo() + "_" + branchName.replaceAll('/', '_');
+            jobName = jobName.replace('@', '_');
+            jobName = jobName.replace('%', '_');
+            jobName = jobName.replace('#', '_');
+            jobName = jobName.replace('&', '_');
+            jobName = jobName.replace('*', '_');
+            jobName = jobName.replace('^', '_');
+            jobName = jobName.replace('@', '_');
+
+
+            if (!jobList.contains(jobName) && !uniqueJobs.contains(jobName.toUpperCase())) {
+
+                uniqueJobs.add(jobName.toUpperCase());
+
+
+                if (emailId == null || emailId.length() != 0)
+                    emailId = "";
+                if (mavenCmd == null || mavenCmd.length() != 0)
+                    mavenCmd = "";
+                if (userProfile == null) userProfile = "";
+                if (team == null) team = "";
+                if (businessVertical == null) businessVertical = "";
+
+
+
+              //  emailId = emailId.replace(',', ' ');
+                //mavenCmd = mavenCmd.replace(',', ' ');
+
+                config = jenkinsApi.getJobConfig(templateJobPrefix);
+                config = config.replace("GIT_URL", gitUrl);
+                config = config.replace("UserProfile_value", userProfile);
+                config = config.replace("Maven_CMD_value", mavenCmd);
+                config = config.replace("Maven_CMD_value", mavenCmd);
+                config = config.replace("EmailIds_value", emailId);
+                config = config.replace("Team_value", team);
+                config = config.replace("Business_Vertical_value", businessVertical);
+                config = config.replace("Team_value", team);
+                config = config.replace("Business_Vertical_value", businessVertical);
+                config = config.replace("BranchName", branchName);
+                // println "creating job =>" + jobName;
+
+                // replacing special characters as jenkins dont accept for jobname
+
+                println "creating job =>" + jobName;
+                jenkinsApi.post(jenkinsApi.buildJobPath("createItem", rootFolder, getOrg(), getRepo()), config, [name: jobName, mode: 'copy', from: templateJobPrefix], ContentType.XML)
+                jenkinsApi.post('job/' + jobName + "/config.xml", config, [:], ContentType.XML)
+                sleep(2000);
+                jobList.add(jobName);
+                // break;
+            }
+
+
+        }
+
+
+    }
+
+    void syncWithRepo() {
+        List<String> allBranchNames = gitApi.branchNames
+        List<String> allJobNames = jenkinsApi.jobNames
+
+        // ensure that there is at least one job matching the template pattern, collect the set of template jobs
+        List<TemplateJob> templateJobs = findRequiredTemplateJobs(allJobNames, templateJobPrefix)
+
+        // create any missing template jobs and delete any jobs matching the template patterns that no longer have branches
+        syncJobs(allBranchNames, allJobNames, templateJobs)
+
+        // create any missing branch views, scoped within a nested view if we were given one
+        if (!noViews) {
+            syncViews(allBranchNames)
+        }
+    }
+
+    public void syncJobs(List<String> allBranchNames, List<String> allJobNames, List<TemplateJob> templateJobs) {
+        List<String> currentTemplateDrivenJobNames = templateDrivenJobNames(templateJobs, allJobNames)
+
+        List<String> nonTemplateBranchNames = allBranchNames - templateBranchName
+        List<ConcreteJob> expectedJobs = this.expectedJobs(templateJobs, nonTemplateBranchNames)
+        println 'currentTemplateDrivenJobNames';
+        println currentTemplateDrivenJobNames;
+        println 'nonTemplateBranchNames';
+        println nonTemplateBranchNames;
+        println 'expectedJobs';
+        println expectedJobs;
+
+        /* createMissingJobs(expectedJobs, currentTemplateDrivenJobNames, templateJobs)
+         if (!noDelete) {
+             deleteDeprecatedJobs(currentTemplateDrivenJobNames - expectedJobs.jobName)
+         }*/
+    }
+
+    public void createMissingJobs(List<ConcreteJob> expectedJobs, List<String> currentJobs, List<TemplateJob> templateJobs) {
+        List<ConcreteJob> missingJobs = expectedJobs.findAll { !currentJobs.contains(it.jobName) }
+        if (!missingJobs) return
+
+        for (ConcreteJob missingJob in missingJobs) {
+            println "Creating missing job: ${missingJob.jobName} from ${missingJob.templateJob.jobName}"
+            jenkinsApi.cloneJobForBranch(missingJob, templateJobs, rootFolder, getOrg(), getRepo());
+            if (startOnCreate) {
+                jenkinsApi.startJob(missingJob)
             }
         }
 
-        this.restClient.client.addRequestInterceptor(this.requestInterceptor)
     }
 
-
-
-    void cloneJobForBranch(ConcreteJob missingJob, List<TemplateJob> templateJobs) {
-        String missingJobConfig = configForMissingJob(missingJob, templateJobs)
-        TemplateJob templateJob = missingJob.templateJob
-
-        //Copy job with jenkins copy job api, this will make sure jenkins plugins get the call to make a copy if needed (promoted builds plugin needs this)
-       // buildJobPath("createItem","Git")
-        //post('createItem', missingJobConfig, [name: missingJob.jobName, mode: 'copy', from: templateJob.jobName], ContentType.XML)
-        post(buildJobPath("createItem","nestedtype_git","nestedtype_org","repo"), missingJobConfig, [name: missingJob.jobName, mode: 'copy', from: templateJob.jobName], ContentType.XML)
-// "nestedtype_git","nestedtype_org","repo"
-        post('job/' + missingJob.jobName + "/config.xml", missingJobConfig, [:], ContentType.XML)
-        //Forced disable enable to work around Jenkins' automatic disabling of clones jobs
-        //But only if the original job was enabled
-        post('job/' + missingJob.jobName + '/disable')
-        if (!missingJobConfig.contains("<disabled>true</disabled>")) {
-            post('job/' + missingJob.jobName + '/enable')
+    public void deleteDeprecatedJobs(List<String> deprecatedJobNames) {
+        if (!deprecatedJobNames) return
+        println "Deleting deprecated jobs:\n\t${deprecatedJobNames.join('\n\t')}"
+        deprecatedJobNames.each { String jobName ->
+            jenkinsApi.deleteJob(jobName)
         }
     }
 
+    public List<ConcreteJob> expectedJobs(List<TemplateJob> templateJobs, List<String> branchNames) {
+        branchNames.collect { String branchName ->
+            templateJobs.collect { TemplateJob templateJob -> templateJob.concreteJobForBranch(branchName) }
+        }.flatten()
+    }
 
+    public List<String> templateDrivenJobNames(List<TemplateJob> templateJobs, List<String> allJobNames) {
+        List<String> templateJobNames = templateJobs.jobName
+        List<String> templateBaseJobNames = templateJobs.baseJobName
 
-
-    void cloneJobForBranch(ConcreteJob missingJob, List<TemplateJob> templateJobs, String rootFolder, String org,String repo) {
-        String missingJobConfig = configForMissingJob(missingJob, templateJobs)
-        TemplateJob templateJob = missingJob.templateJob
-
-        //Copy job with jenkins copy job api, this will make sure jenkins plugins get the call to make a copy if needed (promoted builds plugin needs this)
-        // buildJobPath("createItem","Git")
-        //post('createItem', missingJobConfig, [name: missingJob.jobName, mode: 'copy', from: templateJob.jobName], ContentType.XML)
-        post(buildJobPath("createItem", rootFolder,org,repo), missingJobConfig, [name: missingJob.jobName, mode: 'copy', from: templateJob.jobName], ContentType.XML)
-// "nestedtype_git","nestedtype_org","repo"
-        post('job/' + missingJob.jobName + "/config.xml", missingJobConfig, [:], ContentType.XML)
-        //Forced disable enable to work around Jenkins' automatic disabling of clones jobs
-        //But only if the original job was enabled
-        post('job/' + missingJob.jobName + '/disable')
-        if (!missingJobConfig.contains("<disabled>true</disabled>")) {
-            post('job/' + missingJob.jobName + '/enable')
+        // don't want actual template jobs, just the jobs that were created from the templates
+        return (allJobNames - templateJobNames).findAll { String jobName ->
+            templateBaseJobNames.find { String baseJobName -> jobName.startsWith(baseJobName) }
         }
     }
-void startJob(String jobName) {
-    println "Starting job"+ jobName
-    post('job/' +jobName + '/build')
-}
-    void startJob(ConcreteJob job) {
-        println "Starting job ${job.jobName}."
-        post('job/' + job.jobName + '/build')
-    }
-    List<String> getJobNames(String prefix = null) {
-        println "getting project names from " + jenkinsServerUrl + "api/json"
-        def response = get(path: 'api/json')
-        System.out.println(response);
-        def jobNames = response.data.jobs.name
-        System.out.println(jobNames);
 
-        if (prefix) return jobNames.findAll { it.startsWith(prefix) }
-        return jobNames
+    List<TemplateJob> findRequiredTemplateJobs(List<String> allJobNames) {
+        String regex = /^($templateJobPrefix-[^-]*)-($templateBranchName)$/
+
+        List<TemplateJob> templateJobs = allJobNames.findResults { String jobName ->
+            TemplateJob templateJob = null
+            jobName.find(regex) { full, baseJobName, branchName ->
+                templateJob = new TemplateJob(jobName: full, baseJobName: baseJobName, templateBranchName: branchName)
+            }
+            return templateJob
+        }
+
+        assert templateJobs?.size() > 0, "Unable to find any jobs matching template regex: $regex\nYou need at least one job to match the templateJobPrefix and templateBranchName suffix arguments"
+        return templateJobs
     }
 
-    String getJobConfig(String jobName) {
-        def response = get(path: "job/${jobName}/config.xml", contentType: TEXT,
-                headers: [Accept: 'application/xml'])
-        response.data.text
+
+    List<TemplateJob> findRequiredTemplateJobs(List<String> allJobNames, String templateJobName) {
+        String regex = /^($templateJobPrefix-[^-]*)-($templateBranchName)$/
+        regex = ~/$templateJobPrefix/;
+
+
+        List<TemplateJob> templateJobs = allJobNames.findResults { String jobName ->
+            TemplateJob templateJob = null
+            jobName.find(regex)
+                    { full, baseJobName, branchName ->
+                        templateJob = new TemplateJob(jobName: full, baseJobName: baseJobName, templateBranchName: branchName)
+                    }
+            return templateJob
+        }
+
+        /*
+          for(int i=0;i<allJobNames.size();i++) {
+              if(allJobNames.get(i).contains(templateJobName)) templateJobs.add(allJobNames.get(i));
+
+
+          }*/
+        assert templateJobs?.size() > 0, "Unable to find any jobs matching template regex: $regex\nYou need at least one job to match the templateJobPrefix and templateBranchName suffix arguments"
+        return templateJobs
     }
 
-    String configForMissingJob(ConcreteJob missingJob, List<TemplateJob> templateJobs) {
-        TemplateJob templateJob = missingJob.templateJob
-        String config = getJobConfig(templateJob.jobName)
 
-        def ignoreTags = ["assignedNode"]
+    public void syncViews(List<String> allBranchNames) {
+        List<String> existingViewNames = jenkinsApi.getViewNames(this.nestedView)
+        List<BranchView> expectedBranchViews = allBranchNames.collect { String branchName -> new BranchView(branchName: branchName, templateJobPrefix: this.templateJobPrefix) }
 
-        // should work if there's a remote ("origin/master") or no remote (just "master")
-        config = config.replaceAll("(\\p{Alnum}*[>/])(${templateJob.templateBranchName})<") { fullMatch, prefix, branchName ->
-            // jenkins job configs may have certain fields whose values should not be replaced, the most common being <assignedNode>
-            // which is used to assign a job to a specific node (potentially "master") and the "master" branch
-            if (ignoreTags.find { it + ">" == prefix}) {
-                return fullMatch
+        List<BranchView> missingBranchViews = expectedBranchViews.findAll { BranchView branchView -> !existingViewNames.contains(branchView.viewName) }
+        addMissingViews(missingBranchViews)
+
+        if (!noDelete) {
+            List<String> deprecatedViewNames = getDeprecatedViewNames(existingViewNames, expectedBranchViews)
+            deleteDeprecatedViews(deprecatedViewNames)
+        }
+    }
+
+    public void addMissingViews(List<BranchView> missingViews) {
+        println "Missing views: $missingViews"
+        for (BranchView missingView in missingViews) {
+            jenkinsApi.createViewForBranch(missingView, this.nestedView)
+        }
+    }
+
+    public List<String> getDeprecatedViewNames(List<String> existingViewNames, List<BranchView> expectedBranchViews) {
+        return existingViewNames?.findAll {
+            it.startsWith(this.templateJobPrefix)
+        } - expectedBranchViews?.viewName ?: []
+    }
+
+    public void deleteDeprecatedViews(List<String> deprecatedViewNames) {
+        println "Deprecated views: $deprecatedViewNames"
+
+        for (String deprecatedViewName in deprecatedViewNames) {
+            jenkinsApi.deleteView(deprecatedViewName, this.nestedView)
+        }
+
+    }
+
+    JenkinsApi initJenkinsApi() {
+        if (!jenkinsApi) {
+            assert jenkinsUrl != null
+            if (dryRun) {
+                println "DRY RUN! Not executing any POST commands to Jenkins, only GET commands"
+                this.jenkinsApi = new JenkinsApiReadOnly(jenkinsServerUrl: jenkinsUrl)
             } else {
-                return "$prefix${missingJob.branchName}<"
+                this.jenkinsApi = new JenkinsApi(jenkinsServerUrl: jenkinsUrl)
+            }
+
+            if (jenkinsUser || jenkinsPassword) this.jenkinsApi.addBasicAuth(jenkinsUser, jenkinsPassword)
+        }
+
+        return this.jenkinsApi
+    }
+
+    GitApi initGitApi() {
+        if (!gitApi) {
+            assert gitUrl != null
+            this.gitApi = new GitApi(gitUrl: gitUrl)
+            if (this.branchNameRegex) {
+                this.gitApi.branchNameFilter = ~this.branchNameRegex
             }
         }
 
-        // this is in case there are other down-stream jobs that this job calls, we want to be sure we're replacing their names as well
-        templateJobs.each {
-            config = config.replaceAll(it.jobName, it.jobNameForBranch(missingJob.branchName))
+        return this.gitApi
+    }
+
+    public String readFile(String filePath) {
+        String result = "";
+        try {
+
+            BufferedReader bufferedReader = new BufferedReader(new FileReader(
+                    filePath));
+            String line = "";
+
+            while ((line = bufferedReader.readLine()) != null) {
+                result = result + line + "\n";
+            }
+
+        } catch (Exception e) {
+
         }
-
-        return config
+        return result;
     }
 
-    void deleteJob(String jobName) {
-        println "deleting job $jobName"
-        post("job/${jobName}/doDelete")
-    }
-
-
-    void createView(String viewName) {
-        Map body = [name: viewName, mode: 'hudson.model.ListView', Submit: 'OK', json: '{"name": "' + viewName + '", "mode": "hudson.model.ListView"}']
-        post(buildViewPath("createView","Git"), body)
-         body = [useincluderegex: 'on', includeRegex: "${branchView.templateJobPrefix}.*${branchView.safeBranchName}", name: viewName, json: '{"name": "' + viewName + '","useincluderegex": {"includeRegex": "' + branchView.templateJobPrefix + '.*' + branchView.safeBranchName + '"},' + VIEW_COLUMNS_JSON + '}']
-          println "configuring view ${viewName}"
-         post(buildViewPath("configSubmit", nestedWithinView, viewName), body)
-    }
-
-    void createView(String viewName, String rootFolder) {
-        Map body = [name: viewName, mode: 'hudson.model.ListView', Submit: 'OK', json: '{"name": "' + viewName + '", "mode": "hudson.model.ListView"}']
-        post(buildViewPath("createView",rootFolder), body)
-       // body = [useincluderegex: 'on', includeRegex: "${branchView.templateJobPrefix}.*${branchView.safeBranchName}", name: viewName, json: '{"name": "' + viewName + '","useincluderegex": {"includeRegex": "' + branchView.templateJobPrefix + '.*' + branchView.safeBranchName + '"},' + VIEW_COLUMNS_JSON + '}']
-       // println "configuring view ${viewName}"
-      //  post(buildViewPath("configSubmit", nestedWithinView, viewName), body)
-    }
-    void createView(String viewName, String rootFolder, String org) {
-        Map body = [name: viewName, mode: 'hudson.model.ListView', Submit: 'OK', json: '{"name": "' + viewName + '", "mode": "hudson.model.ListView"}']
-        post(buildViewPath("createView",rootFolder,org), body)
-        // body = [useincluderegex: 'on', includeRegex: "${branchView.templateJobPrefix}.*${branchView.safeBranchName}", name: viewName, json: '{"name": "' + viewName + '","useincluderegex": {"includeRegex": "' + branchView.templateJobPrefix + '.*' + branchView.safeBranchName + '"},' + VIEW_COLUMNS_JSON + '}']
-        // println "configuring view ${viewName}"
-        //  post(buildViewPath("configSubmit", nestedWithinView, viewName), body)
-    }
-
-
-    void createViewForBranch(BranchView branchView, String nestedWithinView = null) {
-        String viewName = branchView.viewName
-        Map body = [name: viewName, mode: 'hudson.model.ListView', Submit: 'OK', json: '{"name": "' + viewName + '", "mode": "hudson.model.ListView"}']
-        println "creating view - viewName:${viewName}, nestedView:${nestedWithinView}"
-        post(buildViewPath("createView", nestedWithinView), body)
-
-       // body = [useincluderegex: 'on', includeRegex: "${branchView.templateJobPrefix}.*${branchView.safeBranchName}", name: viewName, json: '{"name": "' + viewName + '","useincluderegex": {"includeRegex": "' + branchView.templateJobPrefix + '.*' + branchView.safeBranchName + '"},' + VIEW_COLUMNS_JSON + '}']
-      //  println "configuring view ${viewName}"
-       // post(buildViewPath("configSubmit", nestedWithinView, viewName), body)
-    }
-
-    List<String> getViewNames(String nestedWithinView = null) {
-        String path = buildViewPath("api/json", nestedWithinView)
-        println "getting views - nestedWithinView:${nestedWithinView} at path: $path"
-        def response = get(path: path, query: [tree: 'views[name,jobs[name]]'])
-        response.data?.views?.name
-    }
-
-    void deleteView(String viewName, String nestedWithinView = null) {
-        println "deleting view - viewName:${viewName}, nestedView:${nestedWithinView}"
-        post(buildViewPath("doDelete", nestedWithinView, viewName))
-    }
-
-    protected String buildViewPath(String pathSuffix, String... nestedViews) {
-        List elems = nestedViews.findAll { it != null }
-        println "elems"+elems;
-        String viewPrefix = elems.collect { "view/${it}" }.join('/')
-
-        if (viewPrefix) return "$viewPrefix/$pathSuffix"
-
-        return pathSuffix
-    }
-
-    protected String buildJobPath(String pathSuffix, String... nestedViews) {
-        List elems = nestedViews.findAll { it != null }
-        println "elems"+elems;
-        String viewPrefix = elems.collect { "view/${it}" }.join('/')
-
-        if (viewPrefix) return "$viewPrefix/$pathSuffix"
-
-        return pathSuffix
-    }
-
-
-
-protected boolean getCheck(Map map) {
-        // get is destructive to the map, if there's an error we want the values around still
-        Map mapCopy = map.clone() as Map
-        def response
-
-        assert mapCopy.path != null, "'path' is a required attribute for the GET method"
+    public void config(String filePath, String pattern1, String pattern2, String toInsert) {
+        // now edit the file
+        // now add the first part
+        // find the <builders> tag
 
         try {
-            response = restClient.get(map)
-            if(response.status==200) return true;
-            else return false;
-            
-           /// response.
-        } catch (Exception ex) {
-            println "Unable to connect to host: $jenkinsServerUrl"
+            FileReader fileReader = new FileReader(filePath);
+            String line = "";
+            int count = 0;
+            boolean end = false;
+            String prefix = "";
+            String suffix = "";
+            BufferedReader bufferedReader = new BufferedReader(fileReader);
+            // line.con
+            String last = "";
+
+
+            while ((line = bufferedReader.readLine()) != null) {
+                if (line.contains(pattern1)) {
+                    if ((last.trim()).compareTo((line.trim())) != 0) {
+
+
+                        prefix = prefix + line + "\n";
+
+
+                    }
+                    last = line;
+                    break;
+                } else {
+                    if (last.trim().compareTo(line.trim()) != 0) {
+                        prefix = prefix + line + "\n";
+
+                    }
+                    last = line;
+                }
+            }
+            boolean firstTime = true;
+            while ((line = bufferedReader.readLine()) != null) {
+                if (line.contains(pattern2) && firstTime) {
+                    end = true;
+
+                    firstTime = false;
+                    if (last.trim().compareTo(line.trim()) != 0) {
+                        prefix = prefix + line + "\n";
+
+
+                    }
+                    last = line;
+                    continue;
+                }
+                if (end) {
+                    if (last.trim().compareTo(line.trim()) != 0) {
+                        suffix = suffix + line + "\n";
+
+                    }
+                    last = line;
+                } else {
+                    if (last.trim().compareTo(line.trim()) != 0) {
+                        prefix = prefix + line + "\n";
+
+                    }
+                    last = line;
+                }
+
+            }
+            System.out.println("prefix" + prefix);
+            System.out.println("toinsert" + toInsert);
+            System.out.println("suffix" + suffix);
+            FileWriter fileWriter = new FileWriter(filePath);
+            BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);
+            bufferedWriter.write(prefix + toInsert + suffix);
+            bufferedWriter.close();
+
+        } catch (Exception e) {
+
+        }
+
+        // then add the line f
+
+    }
+
+    String getOrg() {
+        String git = gitUrl.substring(12);
+
+        int first = git.indexOf('/');
+        int second = git.indexOf('/', first + 1);
+        println "org" + org;
+
+        return git.substring(first + 1, second);
+
+
+    }
+
+    String getRepo() {
+        println "gitul" + gitUrl;
+        String git = gitUrl.substring(12);
+        int first = git.indexOf('/');
+        int second = git.indexOf('/', first + 1);
+        println "repo" + repo;
+        return git.substring(second + 1, git.length());
+
+    }
+
+    boolean createJobsForallRepo() {
+
+        /*String url=jenkinsUrl+"view/Git-Structure/view/"+getOrg()+"/view/"+getRepo();
+        System.out.println("checking path => "+ "view/Git-Structure/view/"+getOrg()+"/view/"+getRepo());
+
+        try {
+
+            String testurl=jenkinsUrl+"view/Git-Structure/view/"+getOrg()+"/view/"+getRepo()+"/newJob";
+            URL u = new URL(testurl);
+            HttpURLConnection huc = (HttpURLConnection) u.openConnection();
+
+            huc.setRequestMethod("HEAD");
+            if (huc.getResponseCode() != HttpURLConnection.HTTP_OK) {
+                System.out.println("response code  => " + huc.getResponseCode() + " not found " + url);
+                return false;
+            } else {
+                System.out.println("response code => " + huc.getResponseCode() + " " + url);
+                return true;
+            }
+        } catch (Exception e) {
+            System.out.println(e);
             return false;
-           // throw ex
-        } 
 
-       // assert response.status < 400
-        return false;
+        }
+*/
+
+        String path1 = "view/Git-Structure/view/" + getOrg() + "/view/" + getRepo();
+//   String path = 'view/Git-Structure/view/' + getOrg() + '/view/' + getRepo();
+        boolean response = jenkinsApi.getCheck(path: path1)
+        return response;
+
+
     }
 
-    protected get(Map map) {
-        // get is destructive to the map, if there's an error we want the values around still
-        Map mapCopy = map.clone() as Map
-        def response
+    public void restartJenkins() {
+        Process p = Runtime.getRuntime().exec("sudo /etc/init.d/jenkins restart");
+        //  Thread.sleep(5000);
 
-        assert mapCopy.path != null, "'path' is a required attribute for the GET method"
-
-        try {
-            response = restClient.get(map)
-           /// response.
-        } catch (HttpHostConnectException ex) {
-            println "Unable to connect to host: $jenkinsServerUrl"
-            throw ex
-        } catch (UnknownHostException ex) {
-            println "Unknown host: $jenkinsServerUrl"
-            throw ex
-        } catch (HttpResponseException ex) {
-            def message = "Unexpected failure with path $jenkinsServerUrl${mapCopy.path}, HTTP Status Code: ${ex.response?.status}, full map: $mapCopy"
-            throw new Exception(message, ex)
-        }
-
-        assert response.status < 400
-        return response
     }
 
-    /**
-     * @author Kelly Robinson
-     * from https://github.com/kellyrob99/Jenkins-api-tour/blob/master/src/main/groovy/org/kar/hudson/api/PostRequestSupport.groovy
-     */
-    protected Integer post(String path, postBody = [:], params = [:], ContentType contentType = ContentType.URLENC) {
+    public void reload() {
+        // Process p = Runtime.getRuntime().exec("sudo /etc/init.d/jenkins restart");
+        println "sorry guys I am reloading :(";
+        jenkinsApi.post('reload/');
+        sleep(60000);
+        println "finally reloaded :)";
 
-        //Added the support for jenkins CSRF option, this could be changed to be a build flag if needed.
-        //http://jenkinsurl.com/crumbIssuer/api/json  get crumb for csrf protection  json: {"crumb":"c8d8812d615292d4c0a79520bacfa7d8","crumbRequestField":".crumb"}
-        if (findCrumb) {
-            findCrumb = false
-            println "Trying to find crumb: ${jenkinsServerUrl}crumbIssuer/api/json"
-            try {
-                def response = restClient.get(path: "crumbIssuer/api/json")
-
-                if (response.data.crumbRequestField && response.data.crumb) {
-                    crumbInfo = [:]
-                    crumbInfo['field'] = response.data.crumbRequestField
-                    crumbInfo['crumb'] = response.data.crumb
-                }
-                else {
-                    println "Found crumbIssuer but didn't understand the response data trying to move on."
-                    println "Response data: " + response.data
-                }
-            }
-            catch (HttpResponseException e) {
-                if (e.response?.status == 404) {
-                    println "exceotuin"+e;
-                    println "Couldn't find crumbIssuer for jenkins. Just moving on it may not be needed."
-                }
-                else {
-                    def msg = "Unexpected failure on ${jenkinsServerUrl}crumbIssuer/api/json: ${resp.statusLine} ${resp.status}"
-                    throw new Exception(msg)
-                }
-            }
-        }
-
-        if (crumbInfo) {
-            params[crumbInfo.field] = crumbInfo.crumb
-        }
+        // Thread.sleep(5000);
 
 
-
-
-
-
-        HTTPBuilder http = new HTTPBuilder(jenkinsServerUrl)
-
-        if (requestInterceptor) {
-            http.client.addRequestInterceptor(this.requestInterceptor)
-        }
-
-        Integer status = HttpStatus.SC_EXPECTATION_FAILED
-
-        http.handler.failure = { resp ->
-            def msg = "Unexpected failure on $jenkinsServerUrl$path: ${resp.statusLine} ${resp.status}"
-            status = resp.statusLine.statusCode
-            throw new Exception(msg)
-        }
-
-        http.post(path: path, body: postBody, query: params,
-                requestContentType: contentType) { resp ->
-            assert resp.statusLine.statusCode < 400
-            status = resp.statusLine.statusCode
-        }
-        return status
     }
 
-    static final String VIEW_COLUMNS_JSON = '''
-"columns":[
-      {
-         "stapler-class":"hudson.views.StatusColumn",
-         "kind":"hudson.views.StatusColumn$DescriptorImpl"
-      },
-      {
-         "stapler-class":"hudson.views.WeatherColumn",
-         "kind":"hudson.views.WeatherColumn$DescriptorImpl"
-      },
-      {
-         "stapler-class":"hudson.views.JobColumn",
-         "kind":"hudson.views.JobColumn$DescriptorImpl"
-      },
-      {
-         "stapler-class":"hudson.views.LastSuccessColumn",
-         "kind":"hudson.views.LastSuccessColumn$DescriptorImpl"
-      },
-      {
-         "stapler-class":"hudson.views.LastFailureColumn",
-         "kind":"hudson.views.LastFailureColumn$DescriptorImpl"
-      },
-      {
-         "stapler-class":"hudson.views.LastDurationColumn",
-         "kind":"hudson.views.LastDurationColumn$DescriptorImpl"
-      },
-      {
-         "stapler-class":"hudson.views.BuildButtonColumn",
-         "kind":"hudson.views.BuildButtonColumn$DescriptorImpl"
-      }
-   ]
-'''
+
+    boolean checkUserRepoPresent() {
+
+
+        String path1 = "view/Developers/view/" + user;
+        System.out.println("checking repo" + path1);
+//   String path = 'view/Git-Structure/view/' + getOrg() + '/view/' + getRepo();
+        boolean response = jenkinsApi.getCheck(path: path1)
+        return response;
+
+
+    }
+
+    boolean checkRepoPresent() {
+
+
+        String path1 = "view/Git-Structure/view/" + getOrg() + "/view/" + getRepo();
+        System.out.println("checking repo" + path1);
+//   String path = 'view/Git-Structure/view/' + getOrg() + '/view/' + getRepo();
+        boolean response = jenkinsApi.getCheck(path: path1)
+        return response;
+
+
+    }
 
 }
