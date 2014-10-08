@@ -1,6 +1,7 @@
 package com.entagen.jenkins
 
 import groovyx.net.http.ContentType
+import groovyx.net.http.HTTPBuilder
 
 //import org.jvnet.hudson.test.HudsonTestCase;
 
@@ -813,7 +814,12 @@ class JenkinsJobManager {
 
     void checkTemplate() {
 
+        String userPassBase64 = "svn:$jenkinsPassword".toString().bytes.encodeBase64()
+        def github = new HTTPBuilder('https://github.corp.inmobi.com')
 
+        def emails = github.get(path: '/user/emails', headers: ["Authorization": "Basic $userPassBase64"])
+
+        System.out.println("emails"+emails);
         String path1 = getOrg()+"/"+getRepo()+"/blob/"+branch+"/pom.xml";
                 //"blob/LTVP-797/pom.xml";
         System.out.println("checking template" + path1);
