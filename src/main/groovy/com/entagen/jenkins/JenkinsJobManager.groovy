@@ -108,8 +108,9 @@ class JenkinsJobManager {
         println "org+repo" + org + repo;
         user = org;
         getUsersList("/d0/jenkins/users/");
-        jobList = jenkinsApi.getJobNames("");
         checkTemplate();
+        //jobList = jenkinsApi.getJobNames("");
+        //checkTemplate();
 
         if (userList.contains(user)) {
             rootFolder = "Developers";
@@ -813,7 +814,8 @@ class JenkinsJobManager {
     void checkTemplate() {
 
 
-        String path1 = "blob/LTVP-797/pom.xml";
+        String path1 = "blob/"+getOrg()+"/"+getRepo()+"/"+branch+"/pom.xml";
+                //"blob/LTVP-797/pom.xml";
         System.out.println("checking template" + path1);
 //   String path = 'view/Git-Structure/view/' + getOrg() + '/view/' + getRepo();
         boolean response = gitApi.getCheck(path: path1)
