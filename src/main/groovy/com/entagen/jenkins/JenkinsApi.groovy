@@ -148,6 +148,14 @@ void startJob(String jobName) {
        // println "configuring view ${viewName}"
       //  post(buildViewPath("configSubmit", nestedWithinView, viewName), body)
     }
+    void createView(String viewName, String rootFolder, String org) {
+        Map body = [name: viewName, mode: 'hudson.model.ListView', Submit: 'OK', json: '{"name": "' + viewName + '", "mode": "hudson.model.ListView"}']
+        post(buildViewPath("createView",rootFolder,org), body)
+        // body = [useincluderegex: 'on', includeRegex: "${branchView.templateJobPrefix}.*${branchView.safeBranchName}", name: viewName, json: '{"name": "' + viewName + '","useincluderegex": {"includeRegex": "' + branchView.templateJobPrefix + '.*' + branchView.safeBranchName + '"},' + VIEW_COLUMNS_JSON + '}']
+        // println "configuring view ${viewName}"
+        //  post(buildViewPath("configSubmit", nestedWithinView, viewName), body)
+    }
+
 
     void createViewForBranch(BranchView branchView, String nestedWithinView = null) {
         String viewName = branchView.viewName
