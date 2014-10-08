@@ -1,10 +1,69 @@
 package com.entagen.jenkins
 
+import groovyx.net.http.RESTClient
+import org.apache.http.HttpRequest
+import org.apache.http.HttpRequestInterceptor
+import org.apache.http.protocol.HttpContext
+
 import java.util.regex.Pattern
 
 class GitApi {
     String gitUrl
     Pattern branchNameFilter = null
+
+    RESTClient restClient
+    HttpRequestInterceptor requestInterceptor
+
+
+    /*public void setJenkinsServerUrl(String jenkinsServerUrl) {
+        if (!jenkinsServerUrl.endsWith("/")) jenkinsServerUrl += "/"
+        this.jenkinsServerUrl = jenkinsServerUrl
+        this.restClient = new RESTClient(jenkinsServerUrl)
+    }*/
+
+    public void addBasicAuth(String jenkinsServerUser, String jenkinsServerPassword) {
+        String gitUrlCopy=gitUrl;
+
+        if (!gitUrl.endsWith("/")) gitUrlCopy += "/"
+       // this.jenkinsServerUrl = jenkinsServerUrl
+        this.restClient = new RESTClient(gitUrlCopy)
+        println "use basic authentication added for github"
+
+        this.requestInterceptor = new HttpRequestInterceptor() {
+            void process(HttpRequest httpRequest, HttpContext httpContext) {
+                def auth = jenkinsServerUser + ':' + jenkinsServerPassword
+                httpRequest.addHeader('Authorization', 'Basic ' + auth.bytes.encodeBase64().toString())
+            }
+        }
+
+        this.restClient.client.addRequestInterceptor(this.requestInterceptor)
+    }
+
+
+
+
+    protected boolean getCheck(Map map) {
+        // get is destructive to the map, if there's an error we want the values around still
+        Map mapCopy = map.clone() as Map
+        def response
+
+        assert mapCopy.path != null, "'path' is a required attribute for the GET method"
+
+        try {
+            response = restClient.get(map)
+            if(response.status==200) return true;
+            else return false;
+
+            /// response.
+        } catch (Exception ex) {
+            println "Unable to connect to host: $jenkinsServerUrl"
+            return false;
+            // throw ex
+        }
+
+        // assert response.status < 400
+        return false;
+    }
 
     public List<String> getBranchNames() {
         String command = "git ls-remote --heads ${gitUrl}"
