@@ -829,6 +829,13 @@ class JenkinsJobManager {
 //   String path = 'view/Git-Structure/view/' + getOrg() + '/view/' + getRepo();
         boolean response = gitApi.getCheck(path: path1)
         System.out.println("response for the template project"+response)
+
+
+
+        path1 = getOrg()+"/"+getRepo()+"/blob/"+branch+"/build.gradle";
+         response = gitApi.getCheck(path: path1)
+        System.out.println("response for the template project"+response)
+
         //return response;
 
 
