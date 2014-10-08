@@ -392,8 +392,18 @@ class JenkinsJobManager {
                 uniqueJobs.add(jobName.toUpperCase());
 
 
-                emailId = emailId.replace(',', ' ');
-                mavenCmd = mavenCmd.replace(',', ' ');
+                if (emailId == null || emailId.length() != 0)
+                    emailId = "";
+                if (mavenCmd == null || mavenCmd.length() != 0)
+                    mavenCmd = "";
+                if (userProfile == null) userProfile = "";
+                if (team == null) team = "";
+                if (businessVertical == null) businessVertical = "";
+
+
+
+              //  emailId = emailId.replace(',', ' ');
+                //mavenCmd = mavenCmd.replace(',', ' ');
 
                 config = jenkinsApi.getJobConfig(templateJobPrefix);
                 config = config.replace("GIT_URL", gitUrl);
