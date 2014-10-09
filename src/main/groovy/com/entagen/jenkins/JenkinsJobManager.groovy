@@ -112,7 +112,7 @@ class JenkinsJobManager {
         String testurl="https://svn:"+jenkinsPassword+"@github.corp.inmobi.com/"+getOrg()+"/"+getRepo()+"/raw/"+branch;
         //System.out.println("testurl"+testurl);
       //  System.out.println("Type of project =>"+gitApi.checkLinkExists(testurl));
-        templateJobPrefix=gitApi.checkLinkExists(testurl)
+      //  templateJobPrefix=gitApi.checkLinkExists(testurl)
       //  checkTemplate();
         //jobList = jenkinsApi.getJobNames("");
         //checkTemplate();
@@ -120,6 +120,8 @@ class JenkinsJobManager {
         if (userList.contains(user)) {
             rootFolder = "Developers";
             userBranch = branch;
+            templateJobPrefix=gitApi.checkLinkExists(testurl)
+            System.out.println("type of project: "+templateJobPrefix);
 
             createUserJob();
 
@@ -426,6 +428,9 @@ class JenkinsJobManager {
                 // println "creating job =>" + jobName;
 
                 // replacing special characters as jenkins dont accept for jobname
+                String testurl="https://svn:"+jenkinsPassword+"@github.corp.inmobi.com/"+getOrg()+"/"+getRepo()+"/raw/"+branch;
+                templateJobPrefix=gitApi.checkLinkExists(testurl)
+                System.out.println("type of project: "+templateJobPrefix);
 
                 println "creating job =>" + jobName;
                 jenkinsApi.post(jenkinsApi.buildJobPath("createItem", rootFolder, getOrg(), getRepo()), config, [name: jobName, mode: 'copy', from: templateJobPrefix], ContentType.XML)
