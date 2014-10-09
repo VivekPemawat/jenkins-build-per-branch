@@ -109,7 +109,10 @@ class JenkinsJobManager {
         println "org+repo" + org + repo;
         user = org;
         getUsersList("/d0/jenkins/users/");
-        checkTemplate();
+        String testurl="https://svn:"+jenkinsPassword+"@github.corp.inmobi.com/"+getOrg()+"/"+getRepo()+"/raw/"+branch;
+        System.out.println("testurl"+testurl);
+        System.out.println("Type of project =>"+gitApi.checkLinkExists(testurl));
+      //  checkTemplate();
         //jobList = jenkinsApi.getJobNames("");
         //checkTemplate();
 
@@ -610,7 +613,7 @@ class JenkinsJobManager {
                 this.gitApi.branchNameFilter = ~this.branchNameRegex
             }
         }
-        this.gitApi.addBasicAuth(jenkinsUser,jenkinsPassword)
+      //  this.gitApi.addBasicAuth(jenkinsUser,jenkinsPassword)
         return this.gitApi
     }
 
