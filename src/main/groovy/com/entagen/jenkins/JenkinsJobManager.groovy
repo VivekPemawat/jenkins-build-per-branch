@@ -110,8 +110,9 @@ class JenkinsJobManager {
         user = org;
         getUsersList("/d0/jenkins/users/");
         String testurl="https://svn:"+jenkinsPassword+"@github.corp.inmobi.com/"+getOrg()+"/"+getRepo()+"/raw/"+branch;
-        System.out.println("testurl"+testurl);
-        System.out.println("Type of project =>"+gitApi.checkLinkExists(testurl));
+        //System.out.println("testurl"+testurl);
+      //  System.out.println("Type of project =>"+gitApi.checkLinkExists(testurl));
+        templateJobPrefix=gitApi.checkLinkExists(testurl)
       //  checkTemplate();
         //jobList = jenkinsApi.getJobNames("");
         //checkTemplate();
@@ -120,12 +121,12 @@ class JenkinsJobManager {
             rootFolder = "Developers";
             userBranch = branch;
 
-            //createUserJob();
+            createUserJob();
 
         } else {
 
 
-           // createJobsForallBranches();
+            createJobsForallBranches();
         }
     }
 
