@@ -70,12 +70,14 @@ class GitApi {
         String commandPOM ="GET "+URL+"/pom.xml -s -d";
           if(commandPOM.execute().text.contains("200")) {
               println commandPOM.execute().text;
+              println "entered into java based"
               return "javabasedproject";
               //return true
           }
 
         String commandpython ="GET "+URL+"/setup.py -s -d";
         if(commandpython.execute().text.contains("200")) {
+
             return "pythonprject";
             //return true
         }
@@ -85,7 +87,7 @@ class GitApi {
             return "gradlebasedproject";
             //return true
         }
-
+return "None";
 
     }
     public List<String> getBranchNames() {
