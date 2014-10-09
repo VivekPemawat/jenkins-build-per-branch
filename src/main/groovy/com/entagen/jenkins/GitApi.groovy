@@ -68,9 +68,12 @@ class GitApi {
 
     public String  checkLinkExists(String url) {
         String commandPOM ="GET "+URL+"/pom.xml -s -d";
+        println commandPOM;
           if(commandPOM.execute().text.contains("200")) {
-              println commandPOM.execute().text;
-              println "entered into java based"
+              String str=commandPOM.execute().text;
+              if(str.concat("200")) {
+                  println "entered into java based"
+              }
               return "javabasedproject";
               //return true
           }
