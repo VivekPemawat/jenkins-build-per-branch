@@ -67,7 +67,7 @@ class GitApi {
 
 
     public String  checkLinkExists(String url) {
-        String commandPOM ="GET "+URL+"/pom.xml -s -d";
+        String commandPOM ="GET "+url+"/pom.xml -s -d";
         println commandPOM;
           if(commandPOM.execute().text.contains("200")) {
               String str=commandPOM.execute().text;
@@ -78,14 +78,14 @@ class GitApi {
               //return true
           }
 
-        String commandpython ="GET "+URL+"/setup.py -s -d";
+        String commandpython ="GET "+url+"/setup.py -s -d";
         if(commandpython.execute().text.contains("200")) {
 
             return "pythonprject";
             //return true
         }
 
-        String commandgradle ="GET "+URL+"/build.gradle -s -d";
+        String commandgradle ="GET "+url+"/build.gradle -s -d";
         if(commandPOM.execute().text.contains("200")) {
             return "gradlebasedproject";
             //return true
