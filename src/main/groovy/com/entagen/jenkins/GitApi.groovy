@@ -1,9 +1,6 @@
 package com.entagen.jenkins
-
 import groovyx.net.http.RESTClient
-import org.apache.http.HttpRequest
 import org.apache.http.HttpRequestInterceptor
-import org.apache.http.protocol.HttpContext
 
 import java.util.regex.Pattern
 
@@ -21,7 +18,7 @@ class GitApi {
         this.restClient = new RESTClient(jenkinsServerUrl)
     }*/
 
-    public void addBasicAuth(String jenkinsServerUser, String jenkinsServerPassword) {
+   /* public void addBasicAuth(String jenkinsServerUser, String jenkinsServerPassword) {
         String gitUrlCopy=gitUrl;
 
         if (!gitUrl.endsWith("/")) gitUrlCopy += "/"
@@ -38,6 +35,8 @@ class GitApi {
 
         this.restClient.client.addRequestInterceptor(this.requestInterceptor)
     }
+*/
+
 
 
 
@@ -65,6 +64,30 @@ class GitApi {
         return false;
     }
 
+
+
+    public String  checkLinkExists(String url) {
+        String commandPOM ="GET "+URL+"/pom.xml -s -d";
+          if(commandPOM.execute().text.contains("200")) {
+              println commandPOM.execute().text;
+              return "javabasedproject";
+              //return true
+          }
+
+        String commandpython ="GET "+URL+"/setup.py -s -d";
+        if(commandpython.execute().text.contains("200")) {
+            return "pythonprject";
+            //return true
+        }
+
+        String commandgradle ="GET "+URL+"/build.gradle -s -d";
+        if(commandPOM.execute().text.contains("200")) {
+            return "gradlebasedproject";
+            //return true
+        }
+
+
+    }
     public List<String> getBranchNames() {
         String command = "git ls-remote --heads ${gitUrl}"
         List<String> branchNames = []
